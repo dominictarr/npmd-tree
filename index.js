@@ -71,34 +71,45 @@ function ls (dir, cb) {
   )
 }
 
+var fields = 'name,version,from,gypfile,shasum'.split(',')
+
 function clean (t) {
   var deps = t.dependencies
   var _deps = t.tree || {}
 
-  delete t.tree
-  delete t._parent
-  delete t.description
-  delete t.devDependencies
-  delete t.tree
-  delete t.scripts
-  delete t.parent
-  delete t.time
-  delete t.size
-  delete t.readme
-  delete t.author
-  delete t.homepage
-  delete t._from
-  delete t._resolved
-  delete t.license
-  delete t.bugs
-  delete t.repository
-  delete t.readmeFilename
-  delete t._id
-  if(t.dist)
-    t.shasum = t.dist.shasum
-  delete t.dist
-  delete t.path
-  delete t.dependencies
+  var shasum = t.dist && t.dist.shasum
+  for(var k in t)
+    if(!~fields.indexOf(k))
+      delete t[k]
+
+//  delete t.tree
+//  delete t._parent
+//  delete t.description
+//  delete t.devDependencies
+//  delete t.tree
+//  delete t.scripts
+//  delete t.parent
+//  delete t.time
+//  delete t.size
+//  delete t.readme
+//  delete t.author
+//  delete t.homepage
+//  delete t._from
+//  delete t._resolved
+//  delete t.license
+//  delete t.bugs
+//  delete t.repository
+//  delete t.readmeFilename
+//  delete t._id
+//  delete t.keywords
+//  delete t.testling
+//  if(t.dist)
+//    t.shasum = t.dist.shasum
+//  delete t.dist
+//  delete t.path
+//  delete t.dependencies
+
+  t.shasum = shasum
 
   for(var k in _deps) {
     _deps[k].from = deps[k]
@@ -152,21 +163,15 @@ exports.commands = function (db) {
   db.commands.tree = function (config, cb) {
     tree(config.installPath, function (err, tree) {
       if(err) throw err
-      console.log(JSON.string)
+      console.log(JSON.stringify(tree, null, 2))
       cb()
     })
   }
   db.commands.ls = function (config, cb) {
     ls(config.installPath, function (err, tree) {
       if(err) throw err
-      console.log(JSON.string)
+      console.log(JSON.stringify(tree, null, 2))
       cb()
     })
   }
 }
-
-if(!module.parent)
-  tree(function (err, data) {
-    console.log(JSON.stringify(data, null, 2))
-  })
-
