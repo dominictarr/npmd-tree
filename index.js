@@ -73,6 +73,46 @@ function ls (dir, cb) {
   )
 }
 
+function clean (t) {
+  var deps = t.dependencies
+  var _deps = t.tree || {}
+
+  delete t.tree
+  delete t._parent
+  delete t.description
+  delete t.devDependencies
+  delete t.tree
+  delete t.scripts
+  delete t.parent
+  delete t.time
+  delete t.size
+  delete t.readme
+  delete t.author
+  delete t.homepage
+  delete t._from
+  delete t._resolved
+  delete t.license
+  delete t.bugs
+  delete t.repository
+  delete t.readmeFilename
+  delete t._id
+  if(t.dist)
+    t.shasum = t.dist.shasum
+  delete t.dist
+  delete t.path
+  delete t.dependencies
+
+  for(var k in _deps) {
+    _deps[k].from = deps[k]
+    clean(_deps[k])
+  }
+
+  t.dependencies = _deps
+
+  return t
+}
+
+
 //todo: create the same datastructure as resolve.
 
 function tree (dir, cb) {
@@ -82,22 +122,32 @@ function tree (dir, cb) {
   findPackage(dir, function (err, pkg) {
     pull(
       pull.depthFirst(pkg, function (pkg) {
+        pkg.tree = {}
         return pull(
           pfs.readdir(path.resolve(pkg.path, 'node_modules')),
           pull.filter(),
           pfs.resolve('package.json'),
           pfs.isFile(),
-          readJson()          
+          readJson(),
+          pull.filter(function (_pkg) {
+            if(!_pkg) return
+            _pkg.parent = pkg
+            
+            pkg.tree[_pkg.name] = _pkg
+            return pkg
+          })
         )
       }),
-      filter(),
-      pull.collect(cb)
+//      filter(),
+      pull.drain(null, function (err) {
+        cb(err === true ? null : err, clean(pkg))
+      })
     )
   })
 }
 
 if(!module.parent)
-  tree  (function (err, data) {
-    console.log(err, data)
+  tree(function (err, data) {
+    console.log(JSON.stringify(data, null, 2))
   })
 
