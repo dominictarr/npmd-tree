@@ -138,12 +138,28 @@ function tree (dir, cb) {
           })
         )
       }),
-//      filter(),
       pull.drain(null, function (err) {
         cb(err === true ? null : err, clean(pkg))
       })
     )
   })
+}
+
+exports.db = function noop () {}
+exports.commands = function (db) {
+
+  db.commands.tree = function (config, cb) {
+    tree(config.installPath, function (err, tree) {
+      if(err) throw err
+      console.log(JSON.string)
+    })
+  }
+  db.commands.ls = function (config, cb) {
+    ls(config.installPath, function (err, tree) {
+      if(err) throw err
+      console.log(JSON.string)
+    })
+  }
 }
 
 if(!module.parent)
