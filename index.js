@@ -1,9 +1,7 @@
-var pull = require('pull-stream')
-var pfs  = require('pull-fs')
 var fs   = require('fs')
 var path = require('path')
-
-var $ = require('tree-query')
+var pull = require('pull-stream')
+var pfs  = require('pull-fs')
 
 function readJson () {
   return pull.asyncMap(function (file, cb) {
@@ -144,6 +142,10 @@ function tree (dir, cb) {
     )
   })
 }
+
+exports.tree = tree
+exports.findPackage = findPackage
+exports.ls = ls
 
 exports.db = function noop () {}
 exports.commands = function (db) {
