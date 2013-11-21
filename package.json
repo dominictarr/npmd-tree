@@ -1,21 +1,17 @@
 {
   "name": "npmd-tree",
   "description": "query node_modules",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "homepage": "https://github.com/dominictarr/npmd-tree",
   "repository": {
     "type": "git",
     "url": "git://github.com/dominictarr/npmd-tree.git"
   },
   "dependencies": {
-    "pull-fs" : "1.1.3",
-    "pull-stream":"2.20.0"
-  },
-  "devDependencies": {
-  },
-  "scripts": {
-    "test": "set -e; for t in test/*.js; do node $t; done"
+    "pull-fs": "1.1.3",
+    "pull-stream": "2.20.0",
+    "pull-paramap": "~1.0.3"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
-  "license": "MIT"  
+  "license": "MIT"
 }
