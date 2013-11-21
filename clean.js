@@ -1,7 +1,13 @@
 var fields = ['name', 'version', 'from', 'gypfile', 'shasum']
 
+function isEmpty (obj) {
+  for(var k in obj)
+    return false
+  return true
+}
+
 module.exports = function clean (pkg) {
-  var deps = pkg.dependencies
+  var deps = pkg.dependencies || {}
   var _deps = pkg.tree || {}
 
 //  var shasum = pkg.shasum
@@ -17,7 +23,8 @@ module.exports = function clean (pkg) {
   }
 
   pkg.dependencies = _deps
-
+  if(isEmpty(_deps))
+    delete pkg.dependencies
   return pkg
 }
 
