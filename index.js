@@ -1,8 +1,9 @@
+#! /usr/bin/env node
 var fs   = require('fs')
 var path = require('path')
 var pull = require('pull-stream')
 var pfs  = require('pull-fs')
-
+var paramap = require('pull-paramap')
 var clean = require('./clean')
 
 function filter () {
@@ -80,10 +81,8 @@ function ls (dir, cb) {
 //creates the same datastructure as resolve,
 //selecting all dependencies...
 
-function tree (dir, cb) {
-  if(!cb) cb = dir, dir = null
-  dir = dir || process.cwd()
-
+function tree (dir, opts, cb) {
+  var i = 0
   findPackage(dir, function (err, pkg) {
     pull(
       pull.depthFirst(pkg, function (pkg) {
@@ -101,6 +100,10 @@ function tree (dir, cb) {
           })
         )
       }),
+      opts.post ? paramap(function (data, cb) {
+        //run a post install-style hook.
+        opts.post(data, !(i++), cb)
+      }) : pull.through(),
       pull.drain(null, function (err) {
         cb(err === true ? null : err, clean(pkg))
       })
@@ -113,28 +116,22 @@ exports.findPackage = findPackage
 exports.ls = ls
 
 
-exports.cli = function (db) {
-  db.commands.push(function (db, config, cb) {
-    var args = config._.slice()
-    var cmd = args.shift()
-  
-    if(cmd == 'tree') {
-      tree(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
+if(!module.parent) {
+  var opts = require('optimist').argv
+  var exec = require('child_process').exec
+  tree(process.cwd(), {post: function (data, first, cb) {
+      if(!opts.c) return cb(null, data)
+      var cp = 
+      exec(opts.c, {cwd: data.path}, function (err, stdout) {
+        cb(err, data)
       })
-    }
-    else if(cmd == 'ls')
-      ls(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
-      })
-    else
-      return
+      cp.stdout.pipe(process.stdout)
+      cp.stderr.pipe(process.stderr)
+    }}, function (err, tree) {
+    if(err) throw err
+    if(!opts.quiet)
+      console.log(JSON.stringify(tree, null, 2))
 
-    return true
   })
 
 }
