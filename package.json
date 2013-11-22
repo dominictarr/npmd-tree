@@ -13,7 +13,7 @@
     "pull-paramap": "~1.0.4",
     "continuable": "~1.1.8",
     "continuable-para": "~1.2.0",
-    "optimist": "~0.6.0"
+    "npmd-config": "~1.0.2"
   },
   "bin": "./index.js",
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",

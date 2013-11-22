@@ -146,36 +146,49 @@ exports.findPackage = findPackage
 exports.ls = ls
 
 if(!module.parent) {
-  var opts = require('optimist').argv
+  var config = require('npmd-config')
   var exec = require('child_process').exec
-  if(opts.v || opts.version) {
+  if(config.version) {
     console.log(require('./package').version)
     process.exit(0)
   }
 
-  if(opts.ls) 
+  if(config.ls)
     ls(process.cwd(), function (err, data) {
       if(err) throw err
       console.log(JSON.stringify(data, null, 2))
     })
-  else if(opts.pkg) 
+  else if(config.pkg)
     findPackage(process.cwd(), function (err, data) {
       if(err) throw err
       console.log(JSON.stringify(data, null, 2))
     })
-  else
-  tree(process.cwd(), {post: function (data, cb) {
-      if(!opts.c) return cb(null, data)
-      var cp =
-        exec(opts.c, {cwd: data.path}, function (err, stdout) {
-          cb(err, data)
-        })
-      cp.stdout.pipe(process.stdout)
-      cp.stderr.pipe(process.stderr)
-    }}, function (err, tree) {
-    if(err) throw err
-    if(!opts.quiet)
-      console.log(JSON.stringify(tree, null, 2))
-  })
+  else {
+    config.post =
+      function (data, cb) {
+        if(!config.c) return cb(null, data)
+        var cp =
+          exec(config.c, {cwd: data.path}, function (err, stdout) {
+            cb(err, data)
+          })
+        cp.stdout.pipe(process.stdout)
+        cp.stderr.pipe(process.stderr)
+      }
+
+    var target = config._[0] || config.path
+
+    if(!/^[./]/.test(target))
+      target =
+        path.join(config.path, 'node_modules', target)
+
+    if(config.verbose)
+      console.error('traversing tree starting at:', target)
+
+    tree(target, config, function (err, tree) {
+      if(err) throw err
+      if(!config.quiet || !config.c)
+        console.log(JSON.stringify(tree, null, 2))
+    })
+  }
 }
 
