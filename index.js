@@ -5,6 +5,8 @@ var pull = require('pull-stream')
 var pfs  = require('pull-fs')
 var paramap = require('pull-paramap')
 var clean = require('./clean')
+var cont = require('continuable')
+var para = require('continuable-para')
 
 function filter () {
   return pull(pull.filter(),
@@ -26,18 +28,48 @@ function first (cb) {
   )
 }
 
-function readJson () {
-  return pull.asyncMap(function (file, cb) {
-    fs.readFile(file, 'utf8', function (err, data) {
-      if(err) return cb()
-      var json
-      try { json = JSON.parse(data) }
-      catch (err) { return cb() }
-      json.path = path.dirname(file)
-      cb(null, json)
-    })
+var readJson = cont.to(function (file, cb) {
+  fs.readFile(file, 'utf8', function (err, data) {
+    if(err) return cb(err)
+    var json
+    try { json = JSON.parse(data) }
+    catch (err) { return cb(err) }
+    json.path = path.dirname(file)
+    cb(null, json)
+  })
+})
+
+var exists = cont.to(function (file, cb) {
+  fs.stat(file, function (err, stat) {
+    cb(null, stat)
+  })
+})
+
+
+function readPackage (dir, cb) {
+  var pkg
+  para([
+    readJson(path.resolve(dir, 'package.json')),
+    exists(path.resolve(dir, 'bindings.gyp'))
+  ]) (function (err, data) {
+    if(!err) {
+      pkg = data[0]
+      if(!!data[1])
+        pkg.gypfile = true
+      pkg.path = dir
+    }
+    cb(err, pkg)
   })
 }
+
+function maybe(test) {
+  return function (arg, cb) {
+    test(arg, function (err, value) {
+      cb(null, value)
+    })
+  }
+}
+
 
 function findPackage (dir, cb) {
   if(!cb) cb = dir, dir = null
@@ -47,7 +79,8 @@ function findPackage (dir, cb) {
     pfs.ancestors(dir),
     pfs.resolve('package.json'),
     pfs.isFile(),
-    readJson(),
+    pull.asyncMap(maybe(readJson)),
+    pull.filter(),
     first(cb)
   )
 }
@@ -62,9 +95,8 @@ function ls (dir, cb) {
     pfs.ancestors(dir),
     pfs.resolve('node_modules'),
     pfs.star(),
-    pfs.resolve('package.json'),
     pull.filter(Boolean),
-    readJson(),
+    paramap(maybe(readPackage)),
     filter(),
     pull.unique('name'),
     pull.reduce(function (obj, val) {
@@ -77,7 +109,6 @@ function ls (dir, cb) {
   )
 }
 
-
 //creates the same datastructure as resolve,
 //selecting all dependencies...
 
@@ -89,8 +120,7 @@ function tree (dir, opts, cb) {
         pkg.tree = {}
         return pull(
           pfs.readdir(path.resolve(pkg.path, 'node_modules')),
-          pfs.resolve('package.json'),
-          readJson(),
+          paramap(maybe(readPackage)),
           pull.filter(function (_pkg) {
             if(!_pkg) return
             _pkg.parent = pkg
@@ -115,24 +145,32 @@ exports.tree = tree
 exports.findPackage = findPackage
 exports.ls = ls
 
-
 if(!module.parent) {
   var opts = require('optimist').argv
   var exec = require('child_process').exec
+  if(opts.ls) 
+    ls(process.cwd(), function (err, data) {
+      if(err) throw err
+      console.log(JSON.stringify(data, null, 2))
+    })
+  else if(opts.pkg) 
+    findPackage(process.cwd(), function (err, data) {
+      if(err) throw err
+      console.log(JSON.stringify(data, null, 2))
+    })
+  else
   tree(process.cwd(), {post: function (data, first, cb) {
       if(!opts.c) return cb(null, data)
-      var cp = 
-      exec(opts.c, {cwd: data.path}, function (err, stdout) {
-        cb(err, data)
-      })
+      var cp =
+        exec(opts.c, {cwd: data.path}, function (err, stdout) {
+          cb(err, data)
+        })
       cp.stdout.pipe(process.stdout)
       cp.stderr.pipe(process.stderr)
     }}, function (err, tree) {
     if(err) throw err
     if(!opts.quiet)
       console.log(JSON.stringify(tree, null, 2))
-
   })
-
 }
 
