@@ -132,7 +132,7 @@ function tree (dir, opts, cb) {
       }),
       opts.post ? paramap(function (data, cb) {
         //run a post install-style hook.
-        opts.post(data, !(i++), cb)
+        opts.post(data, cb)
       }) : pull.through(),
       pull.drain(null, function (err) {
         cb(err === true ? null : err, clean(pkg))
@@ -159,7 +159,7 @@ if(!module.parent) {
       console.log(JSON.stringify(data, null, 2))
     })
   else
-  tree(process.cwd(), {post: function (data, first, cb) {
+  tree(process.cwd(), {post: function (data, cb) {
       if(!opts.c) return cb(null, data)
       var cp =
         exec(opts.c, {cwd: data.path}, function (err, stdout) {
