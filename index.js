@@ -175,7 +175,7 @@ if(!module.parent) {
         cp.stderr.pipe(process.stderr)
       }
 
-    var target = config._[0] || config.path
+    var target = config._[0] || config.path || process.cwd()
 
     if(!/^[./]/.test(target))
       target =
