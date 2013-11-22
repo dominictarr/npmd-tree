@@ -148,6 +148,11 @@ exports.ls = ls
 if(!module.parent) {
   var opts = require('optimist').argv
   var exec = require('child_process').exec
+  if(opts.v || opts.version) {
+    console.log(require('./package').version)
+    process.exit(0)
+  }
+
   if(opts.ls) 
     ls(process.cwd(), function (err, data) {
       if(err) throw err
