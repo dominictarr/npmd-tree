@@ -15,6 +15,7 @@
     "continuable-para": "~1.2.0",
     "optimist": "~0.6.0"
   },
+  "bin": "./index.js",
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
   "license": "MIT"
 }
