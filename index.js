@@ -50,7 +50,7 @@ function readPackage (dir, cb) {
   var pkg
   para([
     readJson(path.resolve(dir, 'package.json')),
-    exists(path.resolve(dir, 'bindings.gyp'))
+    exists(path.resolve(dir, 'binding.gyp'))
   ]) (function (err, data) {
     if(!err) {
       pkg = data[0]
